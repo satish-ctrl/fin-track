@@ -1,4 +1,6 @@
 package com.fintrack.enums;
 
-public class AccountStatus {
+public enum AccountStatus {
+    ACTIVE,
+    INACTIVE
 }

@@ -1,4 +1,6 @@
 package com.fintrack.enums;
 
-public class AccountType {
+public enum AccountType {
+    CASH,
+    BANK
 }

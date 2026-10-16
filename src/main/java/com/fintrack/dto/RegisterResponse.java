@@ -1,4 +1,9 @@
 package com.fintrack.dto;
 
-public class RegisterResponse {
-}
+import com.fintrack.enums.UserStatus;
+
+public record RegisterResponse (
+        Long id,
+        String username,
+        String email
+){}
