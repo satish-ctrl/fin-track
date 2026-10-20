@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -47,9 +49,9 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id){
-        User user = userService.getUser(id);
+    @GetMapping
+    public ResponseEntity<List<User>> getUser(){
+        List<User> user = userService.getUser();
 
         return ResponseEntity.ok(user);
     }

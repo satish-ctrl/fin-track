@@ -42,4 +42,17 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
             AccountStatus status,
             BigDecimal balance
     );
+
+
+    @Query("""
+    SELECT COALESCE(SUM(a.balance), 0)
+    FROM Account a
+    WHERE a.user.email = :email
+      AND a.status = :status
+    """)
+    BigDecimal sumBalanceByUserEmailAndStatus(
+            @Param("email") String email,
+            @Param("status") AccountStatus status
+    );
+
 }

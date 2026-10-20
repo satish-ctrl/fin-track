@@ -75,10 +75,10 @@ public class UserService {
         );
     }
 
-    public User getUser(Long id) {
+    public List<User> getUser() {
 
-        return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        return userRepository.findAll();
+
     }
 
 
