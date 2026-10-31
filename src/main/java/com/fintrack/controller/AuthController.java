@@ -49,13 +49,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping
-    public ResponseEntity<List<User>> getUser(){
-        List<User> user = userService.getUser();
-
-        return ResponseEntity.ok(user);
-    }
-
     @DeleteMapping("/me")
     public ResponseEntity<Void> closeMyAccount() {
         userService.closeMyAccount();

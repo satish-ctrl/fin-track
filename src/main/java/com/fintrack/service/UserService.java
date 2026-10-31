@@ -1,7 +1,9 @@
 package com.fintrack.service;
 
+import com.fintrack.dto.ProfileResponse;
 import com.fintrack.dto.RegisterRequest;
 import com.fintrack.dto.RegisterResponse;
+import com.fintrack.dto.UpdateUsernameRequest;
 import com.fintrack.entity.Account;
 import com.fintrack.entity.User;
 import com.fintrack.enums.AccountStatus;
@@ -26,10 +28,12 @@ public class UserService {
     private final AccountRepository accountRepository;
     private final CurrentUserService currentUserService;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       AccountRepository accountRepository,
-                       CurrentUserService currentUserService) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            AccountRepository accountRepository,
+            CurrentUserService currentUserService) {
+
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.accountRepository = accountRepository;
@@ -46,6 +50,7 @@ public class UserService {
 
         if (userRepository.existsByUsernameAndStatus(
                 username, UserStatus.ACTIVE)) {
+
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Username already exists"
@@ -54,6 +59,7 @@ public class UserService {
 
         if (userRepository.existsByEmailAndStatus(
                 email, UserStatus.ACTIVE)) {
+
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Email already registered"
@@ -63,7 +69,9 @@ public class UserService {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setPasswordHash(
+                passwordEncoder.encode(request.getPassword())
+        );
         user.setStatus(UserStatus.ACTIVE);
 
         User savedUser = userRepository.save(user);
@@ -75,27 +83,65 @@ public class UserService {
         );
     }
 
-    public List<User> getUser() {
+    public ProfileResponse getMyProfile() {
 
-        return userRepository.findAll();
+        User user = currentUserService.getCurrentActiveUser();
 
+        return toProfileResponse(user);
     }
 
+    @Transactional
+    public ProfileResponse updateMyUsername(
+            UpdateUsernameRequest request) {
+
+        User user = currentUserService.getCurrentActiveUser();
+
+        String username = request.username().trim();
+
+        if (username.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Username is required"
+            );
+        }
+
+        if (username.equals(user.getUsername())) {
+            return toProfileResponse(user);
+        }
+
+        if (userRepository.existsByUsername(username)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Username already exists"
+            );
+        }
+
+        user.setUsername(username);
+
+        User savedUser = userRepository.save(user);
+
+        return toProfileResponse(savedUser);
+    }
+
+    private ProfileResponse toProfileResponse(User user) {
+        return new ProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail()
+        );
+    }
 
     @Transactional
     public void closeMyAccount() {
 
-        // 1. Current logged-in ACTIVE user ko fetch karo
         User user = currentUserService.getCurrentActiveUser();
 
-        // 2. User ke saare ACTIVE accounts fetch karo
         List<Account> activeAccounts =
                 accountRepository.findAllByUser_EmailAndStatus(
                         user.getEmail(),
                         AccountStatus.ACTIVE
                 );
 
-        // 3. Balance check: kisi account mein paisa hai toh closure reject
         boolean hasNonZeroBalance = activeAccounts.stream()
                 .anyMatch(account ->
                         account.getBalance().compareTo(BigDecimal.ZERO) != 0
@@ -108,16 +154,13 @@ public class UserService {
             );
         }
 
-        // 4. Saare ACTIVE accounts ko INACTIVE karo
         activeAccounts.forEach(account ->
                 account.setStatus(AccountStatus.INACTIVE)
         );
 
         accountRepository.saveAll(activeAccounts);
 
-        // 5. User ko CLOSED mark karo
         user.setStatus(UserStatus.CLOSED);
         userRepository.save(user);
     }
-
 }
